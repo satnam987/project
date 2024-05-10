@@ -1,133 +1,128 @@
 import random
 from faker import Faker
 
-fake = Faker()
 
-class Kiezer:
-    def __init__(self, voornaam, achternaam, leeftijd):
-        self.voornaam = voornaam
-        self.achternaam = achternaam
-        self.leeftijd = leeftijd
-        self.heeft_gestemd = False
+class Voter:
+    def __init__(self, first_name, last_name, age, voter_id):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.age = age
+        self.voter_id = voter_id
+        self.voted = False
 
-    def stem(self, kandidaten, lijsten):
-        if not self.heeft_gestemd:
-            gekozen_lijst = random.choice(lijsten)
-            gekozen_kandidaat = random.choice(gekozen_lijst.kandidaten)
-            gekozen_kandidaat.ontvang_stem()
-            self.heeft_gestemd = True
-            print(f"{self.voornaam} {self.achternaam} heeft gestemd op {gekozen_kandidaat.voornaam} {gekozen_kandidaat.achternaam}.")
-        else:
-            print(f"{self.voornaam} {self.achternaam} heeft al gestemd en mag niet opnieuw stemmen.")
+class List:
+    def __init__(self, name):
+        self.name = name
+        self.candidates = []
 
-class Kandidaat:
-    def __init__(self, voornaam, achternaam, partij):
-        self.voornaam = voornaam
-        self.achternaam = achternaam
-        self.partij = partij
-        self.stemmen = 0
+    def add_candidate(self, candidate):
+        self.candidates.append(candidate)
 
-    def ontvang_stem(self):
-        self.stemmen += 1
+class Ballot:
+    def __init__(self, voter_id, choices):
+        self.voter_id = voter_id
+        self.choices = choices
 
-class Lijst:
-    def __init__(self, naam, kandidaten):
-        self.naam = naam
-        self.kandidaten = kandidaten
-
-class Stembiljet:
-    def __init__(self, kiezer, keuze):
-        self.kiezer = kiezer
-        self.keuze = keuze
-
-class Stembus:
+class BallotBox:
     def __init__(self):
-        self.stembiljetten = []
+        self.ballots = []
 
-    def ontvang_stembiljet(self, stembiljet):
-        self.stembiljetten.append(stembiljet)
+    def deposit_ballot(self, ballot):
+        self.ballots.append(ballot)
 
 class Scanner:
-    def controleer_stembiljet(self, stembiljet):
-        if stembiljet.keuze:
-            print("Stembiljet goedgekeurd")
-            return True
-        else:
-            print("Stembiljet afgekeurd")
-            return False
+    def scan_ballot(self, ballot):
+        # Simulate scanning process
+        return True  # Assume all scanned ballots are valid
 
-    def controleer_en_registreer_stembiljet(self, stembiljet):
-        geldig = self.controleer_stembiljet(stembiljet)
-        if geldig:
-            stembus.ontvang_stembiljet(stembiljet)
-
-class Stemcomputer:
+class VotingMachine:
     def __init__(self, usb_stick):
         self.usb_stick = usb_stick
+        self.ballot_box = BallotBox()
+        self.scanner = Scanner()
+        self.fake = Faker()
 
-    def stem(self, kiezer, lijsten):
-        if not kiezer.heeft_gestemd:
-            gekozen_lijst = random.choice(lijsten)
-            gekozen_kandidaat = random.choice(gekozen_lijst.kandidaten)
-            kiezer.heeft_gestemd = True
-            return Stembiljet(kiezer, gekozen_kandidaat)
+    def process_vote(self, voter, choices):
+        if not voter.voted:
+            ballot = Ballot(voter.voter_id, choices)
+            self.ballot_box.deposit_ballot(ballot)
+            voter.voted = True
+            return self.scanner.scan_ballot(ballot)
         else:
-            return None
+            raise ValueError("Voter has already voted.")
 
-class Chipkaart:
-    def __init__(self, identificatiecode):
-        self.identificatiecode = identificatiecode
+class ChipCard:
+    def __init__(self, initialized=False):
+        self.initialized = initialized
 
 class USBStick:
-    def __init__(self, opstartcodes):
-        self.opstartcodes = opstartcodes
+    def __init__(self, code):
+        self.code = code
 
-def log_stemming(kiezer, kandidaat):
-    print(f"Stem van {kiezer.voornaam} {kiezer.achternaam} geregistreerd voor {kandidaat.voornaam} {kandidaat.achternaam}.")
+class VotingSystem:
+    def __init__(self):
+        self.voters = []
+        self.lists = []
+        self.voting_machines = []
+        self.usb_stick = USBStick(code='START123')
+        self.chip_cards = [ChipCard() for _ in range(60)]
 
-def genereer_html_uitslag(lijsten):
-    html_content = "<h1>Stemresultaten</h1>"
-    for lijst in lijsten:
-        html_content += f"<h2>Lijst {lijst.naam[-1]}</h2>"
-        html_content += "<ul>"
-        for kandidaat in lijst.kandidaten:
-            html_content += f"<li>{kandidaat.voornaam} {kandidaat.achternaam}: {kandidaat.stemmen} stemmen</li>"
-        html_content += "</ul>"
-    return html_content
+    def setup(self):
+        # Initializing voters
+        for _ in range(1200):
+            first_name = self.fake.first_name()
+            last_name = self.fake.last_name()
+            age = random.randint(18, 90)
+            voter_id = self.fake.uuid4()
+            self.voters.append(Voter(first_name, last_name, age, voter_id))
 
-if __name__ == "__main__":
-    usb_stick = USBStick("opstartcodes")
-    stembus = Stembus()
-    kiezers = []
-    for i in range(1200):
-        leeftijd = random.randint(18, 90)
-        kiezers.append(Kiezer(fake.first_name(), fake.last_name(), leeftijd))  
+        # Creating lists and assigning candidates
+        list_names = ['List A', 'List B', 'List C', 'List D', 'List E']
+        for name in list_names:
+            party_list = List(name)
+            candidates = random.sample(self.voters, 10)
+            for candidate in candidates:
+                party_list.add_candidate(candidate)
+            self.lists.append(party_list)
 
-    kandidaten = []
-    for i in range(1200):
-        voornaam = fake.first_name()
-        achternaam = fake.last_name()
-        partij = f"Partij {random.randint(1, 5)}"
-        kandidaten.append(Kandidaat(voornaam, achternaam, partij))
+        # Initializing voting machines
+        for _ in range(3):
+            machine = VotingMachine(self.usb_stick)
+            self.voting_machines.append(machine)
 
-    lijsten = []
-    for i in range(5):
-        lijsten.append(Lijst(f"Lijst {i+1}", random.sample(kandidaten, 10)))
+    def simulate_voting_process(self):
+        # Randomly simulate voting process
+        for voter in self.voters:
+            if not voter.voted:
+                chosen_list = random.choice(self.lists)
+                if random.choice([True, False]):  # Randomly deciding between list vote or preference vote
+                    choices = [chosen_list.name]
+                else:
+                    choices = [random.choice(chosen_list.candidates).voter_id for _ in range(random.randint(1, 3))]
 
-    stemcomputers = []
-    for i in range(3):
-        stemcomputers.append(Stemcomputer(usb_stick))
+                machine = random.choice(self.voting_machines)
+                try:
+                    machine.process_vote(voter, choices)
+                except ValueError as e:
+                    print(e)
 
-    scanner = Scanner()  
+    def generate_html_output(self):
+        html_content = '<html><head><title>Election Results</title></head><body>'
+        html_content += '<h1>Election Results</h1>'
+        for machine in self.voting_machines:
+            html_content += f'<h2>Machine {machine.usb_stick.code}</h2><ul>'
+            for ballot in machine.ballot_box.ballots:
+                html_content += f'<li>Voter ID: {ballot.voter_id}, Votes: {ballot.choices}</li>'
+            html_content += '</ul>'
+        html_content += '</body></html>'
+        return html_content
 
-    for kiezer in kiezers:
-        stemcomputer = random.choice(stemcomputers)
-        stembiljet = stemcomputer.stem(kiezer, lijsten)
-        if stembiljet:
-            stembus.ontvang_stembiljet(stembiljet)
-            scanner.controleer_en_registreer_stembiljet(stembiljet)
+# Initializing the system and simulating the voting process
+voting_system = VotingSystem()
+voting_system.setup()
+voting_system.simulate_voting_process()
+html_output = voting_system.generate_html_output()
 
-    html_content = genereer_html_uitslag(lijsten)
-
-    with open("stemming_uitslag.html", "w") as html_file:
-        html_file.write(html_content)
+# Uncomment below lines to save HTML output to a file and to view it
+with open('/mnt/data/Election_Results.html', 'w') as file:
+     file.write(html_output)
